@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Inventory - Library Management System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .inventory-header {
+      background: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .inventory-header img {
+      height: 60px;
+      margin-bottom: 10px;
+    }
+    .inventory-header h1 {
+      color: #667eea;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="inventory-header">
+    <img src="https://tse2.mm.bing.net/th/id/OIP.EKabs-fdvK6BTk6s2Z3EfwHaDQ?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" alt="College Logo">
+    <h1>📚 Library Inventory</h1>
+    <p style="color: #666; margin-top: 10px;">Available Books and Their Locations</p>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div id="inventory-container">
+        <p class="empty-state">Loading inventory...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load inventory
+    async function loadInventory() {
+      try {
+        const response = await fetch('/api/inventory');
+        const data = await response.json();
+        
+        if (data.success) {
+          displayInventory(data.books);
+        }
+      } catch (error) {
+        console.error('Error loading inventory:', error);
+        document.getElementById('inventory-container').innerHTML = 
+          '<p class="empty-state">Error loading inventory. Please try again later.</p>';
+      }
+    }
+
+    // Display inventory
+    function displayInventory(books) {
+      const container = document.getElementById('inventory-container');
+      
+      if (books.length === 0) {
+        container.innerHTML = '<p class="empty-state">No books available at the moment.</p>';
+        return;
+      }
+      
+      let html = '<div class="inventory-grid">';
+      
+      books.forEach(book => {
+        html += `
+          <div class="inventory-item">
+            <h3>${book.book_name}</h3>
+            ${book.author_name ? `<p><strong>Author:</strong> ${book.author_name}</p>` : ''}
+            <p><strong>Location:</strong> ${book.location}</p>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    loadInventory();
+    setInterval(loadInventory, 30000); // Refresh every 30 seconds
+  </script>
+</body>
+</html>
+

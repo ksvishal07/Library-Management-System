@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login - Library Management System</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <img src="https://tse2.mm.bing.net/th/id/OIP.EKabs-fdvK6BTk6s2Z3EfwHaDQ?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" alt="College Logo" style="display: block; margin: 0 auto 20px; max-height: 80px; width: auto;">
+      <h1>📚 Library Management System</h1>
+      <div id="alert-container"></div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="user_id">User ID</label>
+          <input type="text" id="user_id" name="user_id" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const user_id = document.getElementById('user_id').value;
+      const password = document.getElementById('password').value;
+      const alertContainer = document.getElementById('alert-container');
+      
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id, password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alertContainer.innerHTML = '<div class="alert alert-success">Login successful! Redirecting...</div>';
+          setTimeout(() => {
+            window.location.href = '/dashboard.html';
+          }, 1000);
+        } else {
+          alertContainer.innerHTML = `<div class="alert alert-error">${data.message}</div>`;
+        }
+      } catch (error) {
+        alertContainer.innerHTML = '<div class="alert alert-error">Connection error. Please try again.</div>';
+      }
+    });
+
+    // Check if already logged in
+    fetch('/api/check-session')
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated) {
+          window.location.href = '/dashboard.html';
+        }
+      });
+  </script>
+</body>
+</html>
+

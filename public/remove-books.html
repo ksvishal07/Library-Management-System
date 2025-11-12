@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remove Books - Library Management System</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="header">
+    <img src="https://tse2.mm.bing.net/th/id/OIP.EKabs-fdvK6BTk6s2Z3EfwHaDQ?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" alt="College Logo" class="logo">
+    <nav class="nav">
+      <a href="/dashboard.html">Dashboard</a>
+      <a href="/book-registration.html">Book Registration</a>
+      <a href="/borrow-book.html">Borrow Book</a>
+      <a href="/return-book.html">Return Book</a>
+      <a href="/notifications.html">Notifications</a>
+      <a href="/remove-books.html" class="active">Remove Books</a>
+      <a href="/inventory.html" target="_blank">Inventory</a>
+      <a href="/qr-code.html">QR Code</a>
+      <a href="#" onclick="logout(); return false;">Logout</a>
+    </nav>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>🗑️ Remove Unwanted Books</h2>
+      <p style="color: #666; margin-bottom: 20px;">
+        Search and remove books that are no longer needed. Books that are currently borrowed cannot be deleted.
+      </p>
+      
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label for="searchBook">Search Books</label>
+        <input type="text" id="searchBook" placeholder="Search by book name, author, or location..." onkeyup="filterBooks()">
+      </div>
+
+      <div id="alert-container"></div>
+      
+      <div id="books-container">
+        <p class="empty-state">Loading books...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    let allBooks = [];
+
+    // Load books
+    async function loadBooks() {
+      try {
+        const response = await fetch('/api/books');
+        const data = await response.json();
+        
+        if (data.success) {
+          allBooks = data.books;
+          displayBooks(data.books);
+        }
+      } catch (error) {
+        console.error('Error loading books:', error);
+        document.getElementById('books-container').innerHTML = 
+          '<p class="empty-state">Error loading books. Please try again.</p>';
+      }
+    }
+
+    // Filter books
+    function filterBooks() {
+      const searchTerm = document.getElementById('searchBook').value.toLowerCase();
+      const filtered = allBooks.filter(book => 
+        book.book_name.toLowerCase().includes(searchTerm) ||
+        (book.author_name && book.author_name.toLowerCase().includes(searchTerm)) ||
+        book.location.toLowerCase().includes(searchTerm) ||
+        book.unique_id.toLowerCase().includes(searchTerm)
+      );
+      displayBooks(filtered);
+    }
+
+    // Display books
+    function displayBooks(books) {
+      const container = document.getElementById('books-container');
+      
+      if (books.length === 0) {
+        container.innerHTML = '<p class="empty-state">No books found.</p>';
+        return;
+      }
+      
+      let html = `
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Book Name</th>
+              <th>Author</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      books.forEach(book => {
+        const canDelete = book.status === 'Available';
+        html += `
+          <tr>
+            <td>${book.unique_id}</td>
+            <td><strong>${book.book_name}</strong></td>
+            <td>${book.author_name || '-'}</td>
+            <td>${book.location}</td>
+            <td><span class="badge ${book.status === 'Available' ? 'badge-available' : 'badge-unavailable'}">${book.status}</span></td>
+            <td>
+              ${canDelete 
+                ? `<button class="btn btn-danger" onclick="confirmDelete(${book.id}, '${book.book_name.replace(/'/g, "\\'")}')">Remove</button>`
+                : `<span style="color: #999; font-size: 14px;">Cannot remove<br>(Currently borrowed)</span>`
+              }
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    // Confirm and delete book
+    async function confirmDelete(id, bookName) {
+      const confirmed = confirm(`Are you sure you want to permanently remove "${bookName}"?\n\nThis action cannot be undone.`);
+      
+      if (!confirmed) {
+        return;
+      }
+      
+      const alertContainer = document.getElementById('alert-container');
+      
+      try {
+        const response = await fetch(`/api/books/${id}`, { method: 'DELETE' });
+        const data = await response.json();
+        
+        if (data.success) {
+          alertContainer.innerHTML = '<div class="alert alert-success">Book removed successfully!</div>';
+          loadBooks();
+          // Clear alert after 3 seconds
+          setTimeout(() => {
+            alertContainer.innerHTML = '';
+          }, 3000);
+        } else {
+          alertContainer.innerHTML = `<div class="alert alert-error">${data.message}</div>`;
+        }
+      } catch (error) {
+        alertContainer.innerHTML = '<div class="alert alert-error">Error removing book. Please try again.</div>';
+      }
+    }
+
+    loadBooks();
+  </script>
+</body>
+</html>
+

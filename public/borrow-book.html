@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Borrow Book - Library Management System</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="header">
+    <img src="https://tse2.mm.bing.net/th/id/OIP.EKabs-fdvK6BTk6s2Z3EfwHaDQ?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" alt="College Logo" class="logo">
+    <nav class="nav">
+      <a href="/dashboard.html">Dashboard</a>
+      <a href="/book-registration.html">Book Registration</a>
+      <a href="/borrow-book.html" class="active">Borrow Book</a>
+      <a href="/return-book.html">Return Book</a>
+      <a href="/notifications.html">Notifications</a>
+      <a href="/remove-books.html">Remove Books</a>
+      <a href="/inventory.html" target="_blank">Inventory</a>
+      <a href="/qr-code.html">QR Code</a>
+      <a href="#" onclick="logout(); return false;">Logout</a>
+    </nav>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>📖 Borrow a Book</h2>
+      <div id="alert-container"></div>
+      <form id="borrowForm">
+        <div class="form-group">
+          <label for="book_id">Select Book *</label>
+          <select id="book_id" name="book_id" required>
+            <option value="">Loading books...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="student_name">Student Name *</label>
+          <input type="text" id="student_name" name="student_name" required>
+        </div>
+        <div class="form-group">
+          <label for="register_number">Register Number *</label>
+          <input type="text" id="register_number" name="register_number" required>
+        </div>
+        <div class="form-group">
+          <label>Borrow Date</label>
+          <input type="text" id="borrow_date" readonly style="background: #f0f0f0;">
+        </div>
+        <div class="form-group">
+          <label>Return Date (7 days from borrow)</label>
+          <input type="text" id="return_date" readonly style="background: #f0f0f0;">
+        </div>
+        <button type="submit" class="btn btn-primary">Borrow Book</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    // Set dates
+    const today = new Date();
+    const returnDate = new Date(today);
+    returnDate.setDate(returnDate.getDate() + 7);
+    
+    document.getElementById('borrow_date').value = today.toISOString().split('T')[0];
+    document.getElementById('return_date').value = returnDate.toISOString().split('T')[0];
+
+    // Load available books
+    async function loadAvailableBooks() {
+      try {
+        const response = await fetch('/api/available-books');
+        const data = await response.json();
+        
+        if (data.success) {
+          const select = document.getElementById('book_id');
+          select.innerHTML = '<option value="">Select a book...</option>';
+          
+          if (data.books.length === 0) {
+            select.innerHTML = '<option value="">No available books</option>';
+            select.disabled = true;
+          } else {
+            data.books.forEach(book => {
+              const option = document.createElement('option');
+              option.value = book.id;
+              option.textContent = `${book.book_name}${book.author_name ? ' - ' + book.author_name : ''} (${book.location})`;
+              select.appendChild(option);
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading books:', error);
+      }
+    }
+
+    // Borrow book
+    document.getElementById('borrowForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const book_id = document.getElementById('book_id').value;
+      const student_name = document.getElementById('student_name').value;
+      const register_number = document.getElementById('register_number').value;
+      const alertContainer = document.getElementById('alert-container');
+      
+      try {
+        const response = await fetch('/api/borrow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ book_id, student_name, register_number })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alertContainer.innerHTML = '<div class="alert alert-success">Book borrowed successfully!</div>';
+          document.getElementById('borrowForm').reset();
+          document.getElementById('borrow_date').value = today.toISOString().split('T')[0];
+          document.getElementById('return_date').value = returnDate.toISOString().split('T')[0];
+          loadAvailableBooks();
+        } else {
+          alertContainer.innerHTML = `<div class="alert alert-error">${data.message}</div>`;
+        }
+      } catch (error) {
+        alertContainer.innerHTML = '<div class="alert alert-error">Connection error. Please try again.</div>';
+      }
+    });
+
+    loadAvailableBooks();
+  </script>
+</body>
+</html>
+

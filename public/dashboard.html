@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Library Management System</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="header">
+    <img src="https://tse2.mm.bing.net/th/id/OIP.EKabs-fdvK6BTk6s2Z3EfwHaDQ?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" alt="College Logo" class="logo">
+    <nav class="nav">
+      <a href="/dashboard.html" class="active">Dashboard</a>
+      <a href="/book-registration.html">Book Registration</a>
+      <a href="/borrow-book.html">Borrow Book</a>
+      <a href="/return-book.html">Return Book</a>
+      <a href="/notifications.html">Notifications</a>
+      <a href="/remove-books.html">Remove Books</a>
+      <a href="/inventory.html" target="_blank">Inventory</a>
+      <a href="/qr-code.html">QR Code</a>
+      <a href="#" onclick="logout(); return false;">Logout</a>
+    </nav>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>📊 Dashboard Overview</h2>
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card">
+          <h3 id="total-books">-</h3>
+          <p>Total Books</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="available-books">-</h3>
+          <p>Available Books</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="borrowed-books">-</h3>
+          <p>Borrowed Books</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="overdue-books">-</h3>
+          <p>Overdue Books</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚙️ Settings</h2>
+      <div id="alert-container"></div>
+      <form id="changePasswordForm">
+        <div class="form-group">
+          <label for="old_password">Old Password</label>
+          <input type="password" id="old_password" name="old_password" required>
+        </div>
+        <div class="form-group">
+          <label for="new_password">New Password</label>
+          <input type="password" id="new_password" name="new_password" required>
+        </div>
+        <div class="form-group">
+          <label for="confirm_password">Confirm New Password</label>
+          <input type="password" id="confirm_password" name="confirm_password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Change Password</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    // Load dashboard stats
+    async function loadDashboard() {
+      try {
+        const response = await fetch('/api/dashboard');
+        const data = await response.json();
+        
+        if (data.success) {
+          document.getElementById('total-books').textContent = data.stats.total;
+          document.getElementById('available-books').textContent = data.stats.available;
+          document.getElementById('borrowed-books').textContent = data.stats.borrowed;
+          document.getElementById('overdue-books').textContent = data.stats.overdue;
+        }
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+      }
+    }
+
+    // Change password
+    document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const old_password = document.getElementById('old_password').value;
+      const new_password = document.getElementById('new_password').value;
+      const confirm_password = document.getElementById('confirm_password').value;
+      const alertContainer = document.getElementById('alert-container');
+      
+      if (new_password !== confirm_password) {
+        alertContainer.innerHTML = '<div class="alert alert-error">New passwords do not match!</div>';
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ old_password, new_password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alertContainer.innerHTML = '<div class="alert alert-success">Password changed successfully!</div>';
+          document.getElementById('changePasswordForm').reset();
+        } else {
+          alertContainer.innerHTML = `<div class="alert alert-error">${data.message}</div>`;
+        }
+      } catch (error) {
+        alertContainer.innerHTML = '<div class="alert alert-error">Connection error. Please try again.</div>';
+      }
+    });
+
+    loadDashboard();
+    setInterval(loadDashboard, 30000); // Refresh every 30 seconds
+  </script>
+</body>
+</html>
+

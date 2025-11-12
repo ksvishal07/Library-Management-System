@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications - Library Management System</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="header">
+    <img src="https://tse2.mm.bing.net/th/id/OIP.EKabs-fdvK6BTk6s2Z3EfwHaDQ?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" alt="College Logo" class="logo">
+    <nav class="nav">
+      <a href="/dashboard.html">Dashboard</a>
+      <a href="/book-registration.html">Book Registration</a>
+      <a href="/borrow-book.html">Borrow Book</a>
+      <a href="/return-book.html">Return Book</a>
+      <a href="/notifications.html" class="active">Notifications</a>
+      <a href="/remove-books.html">Remove Books</a>
+      <a href="/inventory.html" target="_blank">Inventory</a>
+      <a href="/qr-code.html">QR Code</a>
+      <a href="#" onclick="logout(); return false;">Logout</a>
+    </nav>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>⏰ Overdue Notifications</h2>
+      <div id="notifications-container">
+        <p class="empty-state">Loading notifications...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    // Load notifications
+    async function loadNotifications() {
+      try {
+        const response = await fetch('/api/notifications');
+        const data = await response.json();
+        
+        if (data.success) {
+          displayNotifications(data.notifications);
+        }
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+      }
+    }
+
+    // Display notifications
+    function displayNotifications(notifications) {
+      const container = document.getElementById('notifications-container');
+      
+      if (notifications.length === 0) {
+        container.innerHTML = '<p class="empty-state">No overdue books. All books are returned on time! 🎉</p>';
+        return;
+      }
+      
+      let html = `
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Book Name</th>
+              <th>Student Name</th>
+              <th>Register Number</th>
+              <th>Borrow Date</th>
+              <th>Return Date</th>
+              <th>Days Overdue</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      notifications.forEach(notif => {
+        html += `
+          <tr>
+            <td><strong>${notif.book_name}</strong></td>
+            <td>${notif.student_name}</td>
+            <td>${notif.register_number}</td>
+            <td>${notif.borrow_date}</td>
+            <td>${notif.return_date}</td>
+            <td><span class="badge badge-overdue">${notif.days_overdue} days</span></td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    loadNotifications();
+    setInterval(loadNotifications, 60000); // Refresh every minute
+  </script>
+</body>
+</html>
+

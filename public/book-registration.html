@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Registration - Library Management System</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="header">
+    <img src="https://tse2.mm.bing.net/th/id/OIP.EKabs-fdvK6BTk6s2Z3EfwHaDQ?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" alt="College Logo" class="logo">
+    <nav class="nav">
+      <a href="/dashboard.html">Dashboard</a>
+      <a href="/book-registration.html" class="active">Book Registration</a>
+      <a href="/borrow-book.html">Borrow Book</a>
+      <a href="/return-book.html">Return Book</a>
+      <a href="/notifications.html">Notifications</a>
+      <a href="/remove-books.html">Remove Books</a>
+      <a href="/inventory.html" target="_blank">Inventory</a>
+      <a href="/qr-code.html">QR Code</a>
+      <a href="#" onclick="logout(); return false;">Logout</a>
+    </nav>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>📚 Register New Book</h2>
+      <div id="alert-container"></div>
+      <form id="bookForm">
+        <div class="form-group">
+          <label for="book_name">Book Name *</label>
+          <input type="text" id="book_name" name="book_name" required>
+        </div>
+        <div class="form-group">
+          <label for="author_name">Author Name</label>
+          <input type="text" id="author_name" name="author_name">
+        </div>
+        <div class="form-group">
+          <label for="location">Book Location / Shelf Number *</label>
+          <input type="text" id="location" name="location" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Register Book</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>📖 Registered Books</h2>
+      <div id="books-container">
+        <p class="empty-state">Loading books...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    let editingBookId = null;
+
+    // Load books
+    async function loadBooks() {
+      try {
+        const response = await fetch('/api/books');
+        const data = await response.json();
+        
+        if (data.success) {
+          displayBooks(data.books);
+        }
+      } catch (error) {
+        console.error('Error loading books:', error);
+      }
+    }
+
+    // Display books
+    function displayBooks(books) {
+      const container = document.getElementById('books-container');
+      
+      if (books.length === 0) {
+        container.innerHTML = '<p class="empty-state">No books registered yet.</p>';
+        return;
+      }
+      
+      let html = `
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Book Name</th>
+              <th>Author</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      books.forEach(book => {
+        html += `
+          <tr>
+            <td>${book.unique_id}</td>
+            <td>${book.book_name}</td>
+            <td>${book.author_name || '-'}</td>
+            <td>${book.location}</td>
+            <td><span class="badge ${book.status === 'Available' ? 'badge-available' : 'badge-unavailable'}">${book.status}</span></td>
+            <td class="action-buttons">
+              <button class="btn btn-secondary" onclick="editBook(${book.id}, '${book.book_name.replace(/'/g, "\\'")}', '${(book.author_name || '').replace(/'/g, "\\'")}', '${book.location.replace(/'/g, "\\'")}')">Edit</button>
+              <button class="btn btn-danger" onclick="deleteBook(${book.id})">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    // Add/Edit book
+    document.getElementById('bookForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const book_name = document.getElementById('book_name').value;
+      const author_name = document.getElementById('author_name').value;
+      const location = document.getElementById('location').value;
+      const alertContainer = document.getElementById('alert-container');
+      
+      try {
+        let response;
+        if (editingBookId) {
+          response = await fetch(`/api/books/${editingBookId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ book_name, author_name, location })
+          });
+        } else {
+          response = await fetch('/api/books', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ book_name, author_name, location })
+          });
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alertContainer.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+          document.getElementById('bookForm').reset();
+          editingBookId = null;
+          loadBooks();
+        } else {
+          alertContainer.innerHTML = `<div class="alert alert-error">${data.message}</div>`;
+        }
+      } catch (error) {
+        alertContainer.innerHTML = '<div class="alert alert-error">Connection error. Please try again.</div>';
+      }
+    });
+
+    // Edit book
+    function editBook(id, book_name, author_name, location) {
+      editingBookId = id;
+      document.getElementById('book_name').value = book_name;
+      document.getElementById('author_name').value = author_name || '';
+      document.getElementById('location').value = location;
+      document.getElementById('bookForm').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Delete book
+    async function deleteBook(id) {
+      if (!confirm('Are you sure you want to delete this book?')) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/books/${id}`, { method: 'DELETE' });
+        const data = await response.json();
+        
+        if (data.success) {
+          loadBooks();
+        } else {
+          alert(data.message);
+        }
+      } catch (error) {
+        alert('Error deleting book');
+      }
+    }
+
+    loadBooks();
+  </script>
+</body>
+</html>
+
