@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 chcp 65001 >nul
 color 0A
 title Library Management System - Git Setup
@@ -53,11 +54,42 @@ if not exist ".gitignore" (
     echo.
 )
 
+:: Check Git user configuration
+echo [INFO] Checking Git user configuration...
+git config user.name >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [WARNING] Git user name not configured
+    echo.
+    set /p git_name="Enter your name (for Git commits): "
+    if not "!git_name!"=="" (
+        git config user.name "!git_name!"
+        echo [✓] Git user name set
+    )
+    echo.
+)
+
+git config user.email >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [WARNING] Git user email not configured
+    echo.
+    set /p git_email="Enter your email (for Git commits): "
+    if not "!git_email!"=="" (
+        git config user.email "!git_email!"
+        echo [✓] Git user email set
+    )
+    echo.
+)
+
 :: Stage all files
 echo [2/5] Staging files...
 git add .
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to stage files
+    echo.
+    echo Possible causes:
+    echo - File permissions issue
+    echo - Files are locked by another process
+    echo.
     pause
     exit /b 1
 )
@@ -67,13 +99,28 @@ echo.
 :: Check if there are changes to commit
 git diff --cached --quiet
 if %errorlevel% equ 0 (
-    echo [INFO] No changes to commit
+    echo [INFO] No changes to commit (everything already committed)
     echo.
 ) else (
     echo [3/5] Committing files...
     git commit -m "Initial commit - Library Management System"
     if %errorlevel% neq 0 (
+        echo.
         echo [ERROR] Failed to commit files
+        echo.
+        echo Possible causes:
+        echo 1. Git user name/email not configured
+        echo 2. No changes to commit
+        echo 3. Permission issues
+        echo.
+        echo Checking Git configuration...
+        git config --list | findstr "user"
+        echo.
+        echo Try running these commands manually:
+        echo   git config user.name "Your Name"
+        echo   git config user.email "your.email@example.com"
+        echo   git commit -m "Initial commit"
+        echo.
         pause
         exit /b 1
     )
