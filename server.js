@@ -200,33 +200,33 @@ app.get('/api/books', requireAuth, (req, res) => {
 });
 
 app.post('/api/books', requireAuth, (req, res) => {
-  const { book_name, author_name, location } = req.body;
+  const { book_name } = req.body;
   
-  if (!book_name || !location) {
-    return res.status(400).json({ success: false, message: 'Book name and location are required' });
+  if (!book_name) {
+    return res.status(400).json({ success: false, message: 'Book name is required' });
   }
   
   const unique_id = 'BK' + Date.now() + Math.random().toString(36).substr(2, 9);
   
   db.run('INSERT INTO books (book_name, author_name, location, unique_id) VALUES (?, ?, ?, ?)',
-    [book_name, author_name || null, location, unique_id], function(err) {
+    [book_name, null, null, unique_id], function(err) {
       if (err) {
         return res.status(500).json({ success: false, message: 'Error adding book' });
       }
-      res.json({ success: true, message: 'Book added successfully', book_id: this.lastID });
+      res.json({ success: true, message: 'Book added successfully', book_id: this.lastID, unique_id: unique_id });
     });
 });
 
 app.put('/api/books/:id', requireAuth, (req, res) => {
-  const { book_name, author_name, location } = req.body;
+  const { book_name } = req.body;
   const id = req.params.id;
   
-  if (!book_name || !location) {
-    return res.status(400).json({ success: false, message: 'Book name and location are required' });
+  if (!book_name) {
+    return res.status(400).json({ success: false, message: 'Book name is required' });
   }
   
-  db.run('UPDATE books SET book_name = ?, author_name = ?, location = ? WHERE id = ?',
-    [book_name, author_name || null, location, id], (err) => {
+  db.run('UPDATE books SET book_name = ? WHERE id = ?',
+    [book_name, id], (err) => {
       if (err) {
         return res.status(500).json({ success: false, message: 'Error updating book' });
       }

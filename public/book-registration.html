@@ -31,13 +31,8 @@
           <label for="book_name">Book Name *</label>
           <input type="text" id="book_name" name="book_name" required>
         </div>
-        <div class="form-group">
-          <label for="author_name">Author Name</label>
-          <input type="text" id="author_name" name="author_name">
-        </div>
-        <div class="form-group">
-          <label for="location">Book Location / Shelf Number *</label>
-          <input type="text" id="location" name="location" required>
+        <div id="book-id-display" style="display: none; margin-bottom: 20px; padding: 12px; background: #f0f0f0; border-radius: 5px;">
+          <strong>Book ID:</strong> <span id="generated-id"></span>
         </div>
         <button type="submit" class="btn btn-primary">Register Book</button>
       </form>
@@ -98,7 +93,7 @@
             <td>${book.book_name}</td>
             <td><span class="badge ${book.status === 'Available' ? 'badge-available' : 'badge-unavailable'}">${book.status}</span></td>
             <td class="action-buttons">
-              <button class="btn btn-secondary" onclick="editBook(${book.id}, '${book.book_name.replace(/'/g, "\\'")}', '${(book.author_name || '').replace(/'/g, "\\'")}', '${book.location.replace(/'/g, "\\'")}')">Edit</button>
+              <button class="btn btn-secondary" onclick="editBook(${book.id}, '${book.book_name.replace(/'/g, "\\'")}')">Edit</button>
               <button class="btn btn-danger" onclick="deleteBook(${book.id})">Delete</button>
             </td>
           </tr>
@@ -114,8 +109,6 @@
       e.preventDefault();
       
       const book_name = document.getElementById('book_name').value;
-      const author_name = document.getElementById('author_name').value;
-      const location = document.getElementById('location').value;
       const alertContainer = document.getElementById('alert-container');
       
       try {
@@ -124,21 +117,31 @@
           response = await fetch(`/api/books/${editingBookId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ book_name, author_name, location })
+            body: JSON.stringify({ book_name })
           });
         } else {
           response = await fetch('/api/books', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ book_name, author_name, location })
+            body: JSON.stringify({ book_name })
           });
         }
         
         const data = await response.json();
         
         if (data.success) {
-          alertContainer.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+          if (data.unique_id && !editingBookId) {
+            // Show the generated ID for new books
+            document.getElementById('generated-id').textContent = data.unique_id;
+            document.getElementById('book-id-display').style.display = 'block';
+            alertContainer.innerHTML = `<div class="alert alert-success">${data.message}<br>Book ID: <strong>${data.unique_id}</strong></div>`;
+          } else {
+            alertContainer.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+          }
           document.getElementById('bookForm').reset();
+          setTimeout(() => {
+            document.getElementById('book-id-display').style.display = 'none';
+          }, 5000);
           editingBookId = null;
           loadBooks();
         } else {
@@ -150,11 +153,10 @@
     });
 
     // Edit book
-    function editBook(id, book_name, author_name, location) {
+    function editBook(id, book_name) {
       editingBookId = id;
       document.getElementById('book_name').value = book_name;
-      document.getElementById('author_name').value = author_name || '';
-      document.getElementById('location').value = location;
+      document.getElementById('book-id-display').style.display = 'none';
       document.getElementById('bookForm').scrollIntoView({ behavior: 'smooth' });
     }
 
