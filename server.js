@@ -200,38 +200,58 @@ app.get('/api/books', requireAuth, (req, res) => {
 });
 
 app.post('/api/books', requireAuth, (req, res) => {
-  const { book_name } = req.body;
+  const { unique_id, book_name } = req.body;
   
-  if (!book_name) {
-    return res.status(400).json({ success: false, message: 'Book name is required' });
+  if (!unique_id || !book_name) {
+    return res.status(400).json({ success: false, message: 'Book ID and book name are required' });
   }
   
-  const unique_id = 'BK' + Date.now() + Math.random().toString(36).substr(2, 9);
-  
-  db.run('INSERT INTO books (book_name, author_name, location, unique_id) VALUES (?, ?, ?, ?)',
-    [book_name, null, null, unique_id], function(err) {
-      if (err) {
-        return res.status(500).json({ success: false, message: 'Error adding book' });
-      }
-      res.json({ success: true, message: 'Book added successfully', book_id: this.lastID, unique_id: unique_id });
-    });
+  // Check if ID already exists
+  db.get('SELECT * FROM books WHERE unique_id = ?', [unique_id], (err, existing) => {
+    if (err) {
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+    
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'Book ID already exists. Please use a different ID.' });
+    }
+    
+    db.run('INSERT INTO books (book_name, author_name, location, unique_id) VALUES (?, ?, ?, ?)',
+      [book_name, null, null, unique_id], function(err) {
+        if (err) {
+          return res.status(500).json({ success: false, message: 'Error adding book' });
+        }
+        res.json({ success: true, message: 'Book added successfully', book_id: this.lastID, unique_id: unique_id });
+      });
+  });
 });
 
 app.put('/api/books/:id', requireAuth, (req, res) => {
-  const { book_name } = req.body;
+  const { unique_id, book_name } = req.body;
   const id = req.params.id;
   
-  if (!book_name) {
-    return res.status(400).json({ success: false, message: 'Book name is required' });
+  if (!unique_id || !book_name) {
+    return res.status(400).json({ success: false, message: 'Book ID and book name are required' });
   }
   
-  db.run('UPDATE books SET book_name = ? WHERE id = ?',
-    [book_name, id], (err) => {
-      if (err) {
-        return res.status(500).json({ success: false, message: 'Error updating book' });
-      }
-      res.json({ success: true, message: 'Book updated successfully' });
-    });
+  // Check if the new ID already exists (and is not the current book)
+  db.get('SELECT * FROM books WHERE unique_id = ? AND id != ?', [unique_id, id], (err, existing) => {
+    if (err) {
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+    
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'Book ID already exists. Please use a different ID.' });
+    }
+    
+    db.run('UPDATE books SET unique_id = ?, book_name = ? WHERE id = ?',
+      [unique_id, book_name, id], (err) => {
+        if (err) {
+          return res.status(500).json({ success: false, message: 'Error updating book' });
+        }
+        res.json({ success: true, message: 'Book updated successfully' });
+      });
+  });
 });
 
 app.delete('/api/books/:id', requireAuth, (req, res) => {

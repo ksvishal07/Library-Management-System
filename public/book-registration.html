@@ -28,11 +28,12 @@
       <div id="alert-container"></div>
       <form id="bookForm">
         <div class="form-group">
+          <label for="book_id">Book ID *</label>
+          <input type="text" id="book_id" name="book_id" required placeholder="Enter unique book ID">
+        </div>
+        <div class="form-group">
           <label for="book_name">Book Name *</label>
           <input type="text" id="book_name" name="book_name" required>
-        </div>
-        <div id="book-id-display" style="display: none; margin-bottom: 20px; padding: 12px; background: #f0f0f0; border-radius: 5px;">
-          <strong>Book ID:</strong> <span id="generated-id"></span>
         </div>
         <button type="submit" class="btn btn-primary">Register Book</button>
       </form>
@@ -93,7 +94,7 @@
             <td>${book.book_name}</td>
             <td><span class="badge ${book.status === 'Available' ? 'badge-available' : 'badge-unavailable'}">${book.status}</span></td>
             <td class="action-buttons">
-              <button class="btn btn-secondary" onclick="editBook(${book.id}, '${book.book_name.replace(/'/g, "\\'")}')">Edit</button>
+              <button class="btn btn-secondary" onclick="editBook(${book.id}, '${book.unique_id.replace(/'/g, "\\'")}', '${book.book_name.replace(/'/g, "\\'")}')">Edit</button>
               <button class="btn btn-danger" onclick="deleteBook(${book.id})">Delete</button>
             </td>
           </tr>
@@ -108,8 +109,14 @@
     document.getElementById('bookForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const book_name = document.getElementById('book_name').value;
+      const unique_id = document.getElementById('book_id').value.trim();
+      const book_name = document.getElementById('book_name').value.trim();
       const alertContainer = document.getElementById('alert-container');
+      
+      if (!unique_id || !book_name) {
+        alertContainer.innerHTML = '<div class="alert alert-error">Book ID and Book Name are required.</div>';
+        return;
+      }
       
       try {
         let response;
@@ -117,31 +124,22 @@
           response = await fetch(`/api/books/${editingBookId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ book_name })
+            body: JSON.stringify({ unique_id, book_name })
           });
         } else {
           response = await fetch('/api/books', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ book_name })
+            body: JSON.stringify({ unique_id, book_name })
           });
         }
         
         const data = await response.json();
         
         if (data.success) {
-          if (data.unique_id && !editingBookId) {
-            // Show the generated ID for new books
-            document.getElementById('generated-id').textContent = data.unique_id;
-            document.getElementById('book-id-display').style.display = 'block';
-            alertContainer.innerHTML = `<div class="alert alert-success">${data.message}<br>Book ID: <strong>${data.unique_id}</strong></div>`;
-          } else {
-            alertContainer.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
-          }
+          alertContainer.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
           document.getElementById('bookForm').reset();
-          setTimeout(() => {
-            document.getElementById('book-id-display').style.display = 'none';
-          }, 5000);
+          document.getElementById('book_id').readOnly = false; // Re-enable ID field for new entries
           editingBookId = null;
           loadBooks();
         } else {
@@ -153,10 +151,11 @@
     });
 
     // Edit book
-    function editBook(id, book_name) {
+    function editBook(id, unique_id, book_name) {
       editingBookId = id;
+      document.getElementById('book_id').value = unique_id;
+      document.getElementById('book_id').readOnly = false; // Allow editing ID
       document.getElementById('book_name').value = book_name;
-      document.getElementById('book-id-display').style.display = 'none';
       document.getElementById('bookForm').scrollIntoView({ behavior: 'smooth' });
     }
 
