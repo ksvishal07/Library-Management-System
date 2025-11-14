@@ -358,20 +358,37 @@ app.post('/api/borrow', requireAuth, (req, res) => {
 });
 
 // Return API
-app.get('/api/borrow-by-book/:bookName', requireAuth, (req, res) => {
-  const bookName = req.params.bookName;
+app.get('/api/borrow-by-book/:searchTerm', requireAuth, (req, res) => {
+  const searchTerm = req.params.searchTerm;
   
-  db.get(`SELECT * FROM borrows WHERE book_name = ? AND status = 'Active' ORDER BY borrow_date DESC LIMIT 1`,
-    [bookName], (err, borrow) => {
+  // First try to find by book name
+  db.get(`SELECT b.*, bk.unique_id FROM borrows b 
+    JOIN books bk ON b.book_id = bk.id 
+    WHERE b.book_name = ? AND b.status = 'Active' ORDER BY b.borrow_date DESC LIMIT 1`,
+    [searchTerm], (err, borrow) => {
     if (err) {
       return res.status(500).json({ success: false, message: 'Database error' });
     }
     
+    // If not found by name, try to find by book ID (unique_id)
     if (!borrow) {
-      return res.status(404).json({ success: false, message: 'No active borrow found for this book' });
+      db.get(`SELECT b.*, bk.unique_id FROM borrows b 
+        JOIN books bk ON b.book_id = bk.id 
+        WHERE bk.unique_id = ? AND b.status = 'Active' ORDER BY b.borrow_date DESC LIMIT 1`,
+        [searchTerm], (err, borrowById) => {
+        if (err) {
+          return res.status(500).json({ success: false, message: 'Database error' });
+        }
+        
+        if (!borrowById) {
+          return res.status(404).json({ success: false, message: 'No active borrow found for this book name or ID' });
+        }
+        
+        res.json({ success: true, borrow: borrowById });
+      });
+    } else {
+      res.json({ success: true, borrow });
     }
-    
-    res.json({ success: true, borrow });
   });
 });
 

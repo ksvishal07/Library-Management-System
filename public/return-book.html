@@ -28,8 +28,8 @@
       <div id="alert-container"></div>
       <form id="returnForm">
         <div class="form-group">
-          <label for="book_name">Book Name *</label>
-          <input type="text" id="book_name" name="book_name" required placeholder="Enter book name">
+          <label for="book_search">Book Name or ID *</label>
+          <input type="text" id="book_search" name="book_search" required placeholder="Enter book name or ID">
           <button type="button" class="btn btn-secondary" onclick="searchBorrow()" style="margin-top: 10px;">Search</button>
         </div>
       </form>
@@ -63,17 +63,17 @@
 
     // Search for borrow record
     async function searchBorrow() {
-      const book_name = document.getElementById('book_name').value.trim();
+      const search_term = document.getElementById('book_search').value.trim();
       const alertContainer = document.getElementById('alert-container');
       const detailsDiv = document.getElementById('borrow-details');
       
-      if (!book_name) {
-        alertContainer.innerHTML = '<div class="alert alert-error">Please enter a book name</div>';
+      if (!search_term) {
+        alertContainer.innerHTML = '<div class="alert alert-error">Please enter a book name or ID</div>';
         return;
       }
       
       try {
-        const response = await fetch(`/api/borrow-by-book/${encodeURIComponent(book_name)}`);
+        const response = await fetch(`/api/borrow-by-book/${encodeURIComponent(search_term)}`);
         const data = await response.json();
         
         if (data.success && data.borrow) {
@@ -85,7 +85,7 @@
           detailsDiv.style.display = 'block';
           alertContainer.innerHTML = '';
         } else {
-          alertContainer.innerHTML = '<div class="alert alert-error">No active borrow found for this book</div>';
+          alertContainer.innerHTML = '<div class="alert alert-error">No active borrow found for this book name or ID</div>';
           detailsDiv.style.display = 'none';
         }
       } catch (error) {
@@ -126,7 +126,7 @@
     }
 
     // Allow Enter key to search
-    document.getElementById('book_name').addEventListener('keypress', (e) => {
+    document.getElementById('book_search').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
         searchBorrow();
