@@ -405,7 +405,7 @@ app.get('/api/notifications', requireAuth, (req, res) => {
 
 // Inventory API (public, no auth required)
 app.get('/api/inventory', (req, res) => {
-  db.all("SELECT book_name, author_name, location FROM books WHERE status = 'Available' ORDER BY book_name",
+  db.all("SELECT unique_id, book_name FROM books WHERE status = 'Available' ORDER BY book_name",
     [], (err, books) => {
     if (err) {
       return res.status(500).json({ success: false, message: 'Database error' });

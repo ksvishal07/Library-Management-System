@@ -84,8 +84,6 @@
             <tr>
               <th>ID</th>
               <th>Book Name</th>
-              <th>Author</th>
-              <th>Location</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -98,8 +96,6 @@
           <tr>
             <td>${book.unique_id}</td>
             <td>${book.book_name}</td>
-            <td>${book.author_name || '-'}</td>
-            <td>${book.location}</td>
             <td><span class="badge ${book.status === 'Available' ? 'badge-available' : 'badge-unavailable'}">${book.status}</span></td>
             <td class="action-buttons">
               <button class="btn btn-secondary" onclick="editBook(${book.id}, '${book.book_name.replace(/'/g, "\\'")}', '${(book.author_name || '').replace(/'/g, "\\'")}', '${book.location.replace(/'/g, "\\'")}')">Edit</button>

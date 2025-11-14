@@ -29,11 +29,24 @@
   <div class="inventory-header">
     <img src="https://tse2.mm.bing.net/th/id/OIP.EKabs-fdvK6BTk6s2Z3EfwHaDQ?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" alt="College Logo">
     <h1>📚 Library Inventory</h1>
-    <p style="color: #666; margin-top: 10px;">Available Books and Their Locations</p>
+    <p style="color: #666; margin-top: 10px;">Available Books</p>
   </div>
 
   <div class="container">
     <div class="card">
+      <div style="margin-bottom: 20px;">
+        <label for="searchInput" style="display: block; margin-bottom: 8px; color: #555; font-weight: 600;">🔍 Search Books</label>
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Search by book name or ID..." 
+          style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 16px; transition: border-color 0.3s;"
+          onkeyup="filterInventory()"
+          onfocus="this.style.borderColor='#667eea'"
+          onblur="this.style.borderColor='#e0e0e0'"
+        >
+        <p id="result-count" style="margin-top: 10px; color: #666; font-size: 14px;"></p>
+      </div>
       <div id="inventory-container">
         <p class="empty-state">Loading inventory...</p>
       </div>
@@ -41,6 +54,8 @@
   </div>
 
   <script>
+    let allBooks = [];
+
     // Load inventory
     async function loadInventory() {
       try {
@@ -48,7 +63,8 @@
         const data = await response.json();
         
         if (data.success) {
-          displayInventory(data.books);
+          allBooks = data.books;
+          filterInventory();
         }
       } catch (error) {
         console.error('Error loading inventory:', error);
@@ -57,12 +73,41 @@
       }
     }
 
+    // Filter inventory based on search
+    function filterInventory() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+      const resultCount = document.getElementById('result-count');
+      
+      let filteredBooks = allBooks;
+      
+      if (searchTerm) {
+        filteredBooks = allBooks.filter(book => 
+          book.book_name.toLowerCase().includes(searchTerm) ||
+          book.unique_id.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      // Update result count
+      if (searchTerm) {
+        resultCount.textContent = `Found ${filteredBooks.length} book${filteredBooks.length !== 1 ? 's' : ''}`;
+      } else {
+        resultCount.textContent = `Total: ${filteredBooks.length} book${filteredBooks.length !== 1 ? 's' : ''}`;
+      }
+      
+      displayInventory(filteredBooks);
+    }
+
     // Display inventory
     function displayInventory(books) {
       const container = document.getElementById('inventory-container');
       
       if (books.length === 0) {
-        container.innerHTML = '<p class="empty-state">No books available at the moment.</p>';
+        const searchTerm = document.getElementById('searchInput').value.trim();
+        if (searchTerm) {
+          container.innerHTML = '<p class="empty-state">No books found matching your search.</p>';
+        } else {
+          container.innerHTML = '<p class="empty-state">No books available at the moment.</p>';
+        }
         return;
       }
       
@@ -72,8 +117,7 @@
         html += `
           <div class="inventory-item">
             <h3>${book.book_name}</h3>
-            ${book.author_name ? `<p><strong>Author:</strong> ${book.author_name}</p>` : ''}
-            <p><strong>Location:</strong> ${book.location}</p>
+            <p><strong>ID:</strong> ${book.unique_id}</p>
           </div>
         `;
       });

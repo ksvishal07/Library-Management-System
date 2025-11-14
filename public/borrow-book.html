@@ -81,7 +81,7 @@
             data.books.forEach(book => {
               const option = document.createElement('option');
               option.value = book.id;
-              option.textContent = `${book.book_name}${book.author_name ? ' - ' + book.author_name : ''} (${book.location})`;
+              option.textContent = `${book.book_name} (ID: ${book.unique_id})`;
               select.appendChild(option);
             });
           }

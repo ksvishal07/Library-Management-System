@@ -97,36 +97,52 @@ echo [✓] Files staged
 echo.
 
 :: Check if there are changes to commit
+echo [3/5] Checking for changes to commit...
 git diff --cached --quiet
 if %errorlevel% equ 0 (
-    echo [INFO] No changes to commit (everything already committed)
-    echo.
-) else (
-    echo [3/5] Committing files...
-    git commit -m "Initial commit - Library Management System"
-    if %errorlevel% neq 0 (
+    :: No staged changes, check if working tree is clean
+    git diff --quiet
+    if %errorlevel% equ 0 (
+        :: Everything is already committed
+        echo [INFO] No changes to commit - everything already committed
+        echo [✓] Repository is up to date
         echo.
-        echo [ERROR] Failed to commit files
-        echo.
-        echo Possible causes:
-        echo 1. Git user name/email not configured
-        echo 2. No changes to commit
-        echo 3. Permission issues
-        echo.
-        echo Checking Git configuration...
-        git config --list | findstr "user"
-        echo.
-        echo Try running these commands manually:
-        echo   git config user.name "Your Name"
-        echo   git config user.email "your.email@example.com"
-        echo   git commit -m "Initial commit"
-        echo.
-        pause
-        exit /b 1
+        goto :skip_commit
+    ) else (
+        :: There are unstaged changes, stage them first
+        echo [INFO] Staging remaining changes...
+        git add .
     )
-    echo [✓] Files committed
-    echo.
 )
+
+:: There are staged changes, proceed with commit
+echo [3/5] Committing files...
+git commit -m "Initial commit - Library Management System"
+if %errorlevel% neq 0 (
+    echo.
+    echo [ERROR] Failed to commit files
+    echo.
+    echo Checking what went wrong...
+    git status
+    echo.
+    echo Possible causes:
+    echo 1. Git user name/email not configured
+    echo 2. No changes to commit
+    echo 3. Permission issues
+    echo.
+    echo Checking Git configuration...
+    git config --list | findstr "user"
+    echo.
+    echo Note: If everything is already committed, this is normal.
+    echo You can proceed to the next step (GitHub setup).
+    echo.
+    pause
+    exit /b 1
+)
+echo [✓] Files committed
+echo.
+
+:skip_commit
 
 :: Check for existing remote
 git remote -v >nul 2>&1

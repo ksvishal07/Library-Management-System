@@ -31,7 +31,7 @@
       
       <div class="form-group" style="margin-bottom: 20px;">
         <label for="searchBook">Search Books</label>
-        <input type="text" id="searchBook" placeholder="Search by book name, author, or location..." onkeyup="filterBooks()">
+        <input type="text" id="searchBook" placeholder="Search by book name or ID..." onkeyup="filterBooks()">
       </div>
 
       <div id="alert-container"></div>
@@ -68,8 +68,6 @@
       const searchTerm = document.getElementById('searchBook').value.toLowerCase();
       const filtered = allBooks.filter(book => 
         book.book_name.toLowerCase().includes(searchTerm) ||
-        (book.author_name && book.author_name.toLowerCase().includes(searchTerm)) ||
-        book.location.toLowerCase().includes(searchTerm) ||
         book.unique_id.toLowerCase().includes(searchTerm)
       );
       displayBooks(filtered);
@@ -90,8 +88,6 @@
             <tr>
               <th>ID</th>
               <th>Book Name</th>
-              <th>Author</th>
-              <th>Location</th>
               <th>Status</th>
               <th>Action</th>
             </tr>
@@ -105,8 +101,6 @@
           <tr>
             <td>${book.unique_id}</td>
             <td><strong>${book.book_name}</strong></td>
-            <td>${book.author_name || '-'}</td>
-            <td>${book.location}</td>
             <td><span class="badge ${book.status === 'Available' ? 'badge-available' : 'badge-unavailable'}">${book.status}</span></td>
             <td>
               ${canDelete 
