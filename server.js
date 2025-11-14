@@ -7,6 +7,8 @@ const cron = require('node-cron');
 const path = require('path');
 const QRCode = require('qrcode');
 
+const DEFAULT_LOCATION = 'Not Assigned';
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -217,7 +219,7 @@ app.post('/api/books', requireAuth, (req, res) => {
     }
     
     db.run('INSERT INTO books (book_name, author_name, location, unique_id) VALUES (?, ?, ?, ?)',
-      [book_name, null, null, unique_id], function(err) {
+      [book_name, null, DEFAULT_LOCATION, unique_id], function(err) {
         if (err) {
           return res.status(500).json({ success: false, message: 'Error adding book' });
         }
